@@ -14,7 +14,6 @@ class Basic extends Component {
   constructor(props) {
     super(props);
 
-    //let schedulerData = new SchedulerData(new moment("2017-12-18").format(DATE_FORMAT), ViewTypes.Week);
     let schedulerData = new SchedulerData(
       '2017-12-18',
       ViewTypes.Week,
@@ -24,7 +23,6 @@ class Basic extends Component {
         // minuteStep: 15
       },
     );
-    // schedulerData.localeMoment.locale('en');
     schedulerData.setResources(DemoData.resources);
     schedulerData.setEvents(DemoData.events);
     this.state = {
