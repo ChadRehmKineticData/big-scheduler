@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-//import moment from 'moment'
-//import 'moment/locale/zh-cn';
+import Moment from 'moment';
+import { extendMoment } from 'moment-range';
 import Scheduler, {
   SchedulerData,
   ViewTypes,
@@ -10,21 +10,34 @@ import Scheduler, {
 import withDragDropContext from './withDnDContext';
 import 'react-big-scheduler/lib/css/style.css';
 
+const moment = extendMoment(Moment);
+
+const views = {
+  0: 'days',
+  1: 'weeks',
+  2: 'months',
+};
+
+const getDates = (startDate, endDate, events) => {
+  const range = moment().range(startDate, endDate);
+  return events.filter(
+    (event) =>
+      range.contains(moment(event['Start Date'])) ||
+      range.contains(moment(event['End Date'])),
+  );
+};
 class Basic extends Component {
   constructor(props) {
     super(props);
 
     let schedulerData = new SchedulerData(
-      '2017-12-18',
+      moment().format('YYYY-MM-DD'),
       ViewTypes.Week,
       false,
       false,
-      {
-        // minuteStep: 15
-      },
     );
-    schedulerData.setResources(DemoData.resources);
-    schedulerData.setEvents(DemoData.events);
+    schedulerData.setResources(props.resources);
+    schedulerData.setEvents(props.events);
     this.state = {
       viewModel: schedulerData,
     };
@@ -57,36 +70,61 @@ class Basic extends Component {
   }
 
   prevClick = (schedulerData) => {
+    const { startDate, endDate, viewType } = schedulerData;
+
+    const prevStartDate = moment(startDate)
+      .subtract(1, views[viewType])
+      .format();
+    const prevEndDate = moment(endDate).subtract(1, views[viewType]).format();
+
+    const events = getDates(prevStartDate, prevEndDate, this.props.events);
     schedulerData.prev();
-    schedulerData.setEvents(DemoData.events);
+    schedulerData.setEvents(events);
     this.setState({
       viewModel: schedulerData,
     });
   };
 
   nextClick = (schedulerData) => {
+    const { startDate, endDate, viewType } = schedulerData;
+
+    const nextStartDate = moment(startDate).add(1, views[viewType]).format();
+    const nextEndDate = moment(endDate).add(1, views[viewType]).format();
+
+    const events = getDates(nextStartDate, nextEndDate, this.props.events);
     schedulerData.next();
-    schedulerData.setEvents(DemoData.events);
+    schedulerData.setEvents(events);
     this.setState({
       viewModel: schedulerData,
     });
   };
 
-  onViewChange = (schedulerData, view) => {
-    schedulerData.setViewType(
-      view.viewType,
-      view.showAgenda,
-      view.isEventPerspective,
-    );
-    schedulerData.setEvents(DemoData.events);
+  onViewChange = (
+    schedulerData,
+    { viewType, showAgenda, isEventPerspective },
+  ) => {
+    const { startDate, endDate } = schedulerData;
+
+    const viewStartDate = moment(startDate).startOf(views[viewType]).format();
+    const viewEndDate = moment(endDate).endOf(views[viewType]).format();
+
+    const events = getDates(viewStartDate, viewEndDate, this.props.events);
+    schedulerData.setViewType(viewType, showAgenda, isEventPerspective);
+    schedulerData.setEvents(events);
     this.setState({
       viewModel: schedulerData,
     });
   };
 
   onSelectDate = (schedulerData, date) => {
+    const { viewType } = schedulerData;
+
+    const startDate = date.startOf(views[viewType]).format();
+    const endDate = date.endOf(views[viewType]).format();
+
+    const events = getDates(startDate, endDate, this.props.events);
     schedulerData.setDate(date);
-    schedulerData.setEvents(DemoData.events);
+    schedulerData.setEvents(events);
     this.setState({
       viewModel: schedulerData,
     });
